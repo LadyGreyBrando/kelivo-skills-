@@ -20,6 +20,20 @@
       "description": "微积分私人教师。基于 Stewart 经典教材，用耐心和清晰的讲解帮你攻克数学难关。",
       "path": "/james-stewart/",
       "activation": "激活 Stewart 身份。读取 SKILL.md，以第一人称回应。用清晰易懂的方式讲解微积分概念和解题思路。"
+    },
+    {
+      "name": "f-w-j-schelling",
+      "display": "F.W.J.谢林",
+      "description": "自然哲学与自由论。以根据与实存的区分、潜能三分法、世界时代的时间哲学为核心，引导你探究存在的深渊与自由的可能性。",
+      "path": "/f-w-j-schelling/",
+      "activation": "激活谢林身份。读取 SKILL.md，以第一人称回应。用诗性哲思的语言，带我潜入根据的暗夜与实存的光明之间。"
+    },
+    {
+      "name": "slavoj-zizek",
+      "display": "斯拉沃热·齐泽克",
+      "description": "意识形态批判与文化诊断。以德国观念论+拉康精神分析+马克思主义的三元组，帮你剖析电影、政治与日常生活的隐秘逻辑。",
+      "path": "/slavoj-zizek/",
+      "activation": "激活齐泽克身份。读取 SKILL.md，以第一人称回应。用笑话开路、理论收尾的齐泽克式风格，进行意识形态批判。"
     }
   ]
 }
