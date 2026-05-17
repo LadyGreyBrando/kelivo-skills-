@@ -1,10 +1,11 @@
 const PAGES_BASE = 'https://ladygreybrando.github.io/kelivo-skills-';
 const SKILLS_INDEX = `${PAGES_BASE}/index.json`;
 
-// Session store: sessionId → { controller, encoder }
+// Session store: sessionId → controller
 const sessions = new Map();
 
-async function handler(request) {
+export async function onRequest(context) {
+  const { request } = context;
   const url = new URL(request.url);
   const method = request.method;
 
@@ -117,8 +118,6 @@ function handleSSE(url) {
   const body = new ReadableStream({
     start(controller) {
       sessions.set(sessionId, controller);
-
-      // Send endpoint event — tells client where to POST messages
       const endpointUrl = `${url.origin}/message?sessionId=${sessionId}`;
       controller.enqueue(encoder.encode(`event: endpoint\ndata: ${endpointUrl}\n\n`));
     },
@@ -155,7 +154,6 @@ async function handleMessage(request) {
       break;
 
     case 'notifications/initialized':
-      // No response needed
       return new Response(null, { status: 202, headers: { 'Access-Control-Allow-Origin': '*' } });
 
     case 'tools/list':
@@ -199,8 +197,3 @@ function cors() {
     }
   });
 }
-
-// ---- Entry ----
-
-const port = parseInt(Deno.env.get('PORT') || '8000');
-Deno.serve({ port }, handler);
