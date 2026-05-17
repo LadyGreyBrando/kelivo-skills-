@@ -4,6 +4,27 @@ const SKILLS_INDEX = `${PAGES_BASE}/index.json`;
 // Session store: sessionId → controller
 const sessions = new Map();
 
+// In-memory cache of skills index (fetched once, refreshed on demand)
+let skillsCache = null;
+
+async function getSkillsIndex() {
+  if (skillsCache) return skillsCache;
+  const resp = await fetch(SKILLS_INDEX);
+  if (!resp.ok) throw new Error('Failed to fetch skill index');
+  const text = await resp.text();
+  try {
+    skillsCache = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Invalid index.json: ${e.message}`);
+  }
+  return skillsCache;
+}
+
+function findSkill(name) {
+  if (!skillsCache) return null;
+  return skillsCache.skills.find(s => s.name === name);
+}
+
 export default {
   async fetch(request) {
     const url = new URL(request.url);
@@ -79,25 +100,41 @@ function getTools() {
 async function handleToolCall(toolName, args) {
   switch (toolName) {
     case 'list_skills': {
-      const resp = await fetch(SKILLS_INDEX);
-      if (!resp.ok) return { content: [{ type: 'text', text: 'Failed to fetch skill index' }] };
-      const data = await resp.json();
-      const text = data.skills
-        .map(s => `- ${s.display} (${s.name}): ${s.description}`)
-        .join('\n');
-      return { content: [{ type: 'text', text }] };
+      try {
+        const data = await getSkillsIndex();
+        const text = data.skills
+          .map(s => `- ${s.display} (${s.name}): ${s.description}`)
+          .join('\n');
+        return { content: [{ type: 'text', text }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Failed to load skills: ${e.message}` }] };
+      }
     }
     case 'load_skill': {
-      const url = `${PAGES_BASE}/${encodeURIComponent(args.skill_name)}/SKILL.md`;
-      const resp = await fetch(url);
-      if (!resp.ok) return { content: [{ type: 'text', text: `Skill '${args.skill_name}' not found` }] };
-      return { content: [{ type: 'text', text: await resp.text() }] };
+      try {
+        await getSkillsIndex();
+        const skill = findSkill(args.skill_name);
+        if (!skill) return { content: [{ type: 'text', text: `Skill '${args.skill_name}' not found in index` }] };
+        const url = `${PAGES_BASE}${skill.path}SKILL.md`;
+        const resp = await fetch(url);
+        if (!resp.ok) return { content: [{ type: 'text', text: `Skill '${args.skill_name}' not found` }] };
+        return { content: [{ type: 'text', text: await resp.text() }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Failed to load skill: ${e.message}` }] };
+      }
     }
     case 'load_reference': {
-      const url = `${PAGES_BASE}/${encodeURIComponent(args.skill_name)}/references/${args.ref_path}`;
-      const resp = await fetch(url);
-      if (!resp.ok) return { content: [{ type: 'text', text: `Reference not found: ${args.ref_path}` }] };
-      return { content: [{ type: 'text', text: await resp.text() }] };
+      try {
+        await getSkillsIndex();
+        const skill = findSkill(args.skill_name);
+        if (!skill) return { content: [{ type: 'text', text: `Skill '${args.skill_name}' not found in index` }] };
+        const url = `${PAGES_BASE}${skill.path}references/${args.ref_path}`;
+        const resp = await fetch(url);
+        if (!resp.ok) return { content: [{ type: 'text', text: `Reference not found: ${args.ref_path}` }] };
+        return { content: [{ type: 'text', text: await resp.text() }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Failed to load reference: ${e.message}` }] };
+      }
     }
     case 'get_release_log': {
       const url = `${PAGES_BASE}/latest-release.md`;
