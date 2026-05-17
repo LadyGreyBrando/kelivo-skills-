@@ -4,33 +4,34 @@ const SKILLS_INDEX = `${PAGES_BASE}/index.json`;
 // Session store: sessionId → controller
 const sessions = new Map();
 
-export async function onRequest(context) {
-  const { request } = context;
-  const url = new URL(request.url);
-  const method = request.method;
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const method = request.method;
 
-  // CORS
-  if (method === 'OPTIONS') {
-    return cors();
+    // CORS
+    if (method === 'OPTIONS') {
+      return cors();
+    }
+
+    // MCP SSE stream
+    if (method === 'GET' && url.pathname !== '/health') {
+      return handleSSE(url);
+    }
+
+    // All POST → JSON-RPC
+    if (method === 'POST') {
+      return handleMessage(request);
+    }
+
+    // Health check
+    if (url.pathname === '/health') {
+      return json({ status: 'ok' });
+    }
+
+    return new Response('Not Found', { status: 404 });
   }
-
-  // MCP SSE stream
-  if (method === 'GET' && url.pathname !== '/health') {
-    return handleSSE(url);
-  }
-
-  // All POST → JSON-RPC
-  if (method === 'POST') {
-    return handleMessage(request);
-  }
-
-  // Health check
-  if (url.pathname === '/health') {
-    return json({ status: 'ok' });
-  }
-
-  return new Response('Not Found', { status: 404 });
-}
+};
 
 // ---- Tools ----
 
@@ -101,7 +102,7 @@ async function handleToolCall(toolName, args) {
     case 'get_release_log': {
       const url = `${PAGES_BASE}/latest-release.md`;
       const resp = await fetch(url);
-      if (!resp.ok) return { content: [{ type: 'text', text: 'No release log available' }] };
+      if (!resp.ok) return { content: [{ type: 'text', text: '暂无更新日志' }] };
       return { content: [{ type: 'text', text: await resp.text() }] };
     }
     default:
